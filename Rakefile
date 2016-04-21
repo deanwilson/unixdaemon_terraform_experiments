@@ -110,6 +110,16 @@ task destroy: [:configure_state] do
 end
 
 
+desc 'create and display the resource graph'
+task graph: [:configure_state] do
+  tmp_dir = _flatten_project
+
+  system("terraform graph #{tmp_dir} | dot -Tpng > graph.png")
+
+  FileUtils.rm_r tmp_dir unless debug
+end
+
+
 desc 'Run the given projects awsspec tests'
 RSpec::Core::RakeTask.new('spec') do |task|
   spec_dir = File.join(PROJECT_DIR, project_name, 'spec')
