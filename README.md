@@ -156,6 +156,86 @@ Terraform `destroy` the resource we created.
 
     Apply complete! Resources: 0 added, 0 changed, 1 destroyed.
 
+### Adding Tests
+
+While Terraform is remarkably good at its job there are going to be some
+occasions when you want to test what you wanted actually
+happened. In the
+[unixdaemon_terraform_experiments](https://github.com/deanwilson/unixdaemon_terraform_experiments)
+repository I'm handling this with [awspec](https://github.com/k1LoW/awspec)
+and a little custom `rspec` directory modification.
+
+First we pull in the `awspec` gem.
+
+    bundle install
+
+We also need to add the necessary scaffolding files:
+
+    echo "gem 'awspec',  '~> 0.37'" >> Gemfile
+
+    mkdir spec
+
+    echo "require 'awspec'" >> spec/spec_helper.rb
+
+Now we'll add a test to our `simple-sg` project to confirm that the
+security group was created.
+
+    mkdir projects/simple-sg/spec
+
+    $ cat > projects/simple-sg/spec/security_group_spec.rb <<EOF
+    require 'spec_helper'
+
+    describe security_group('test-labs-sg') do
+      it { should exist }
+    end
+    EOF
+
+Note that the tests live beside the terraform project resources, not
+in a combined `spec` directory. This allows us to run only the tests
+related to the project we're currently working on.
+
+We then use `rake spec` to run tests against our chosen project.
+
+    PROJECT_NAME=simple-sg bundle exec rake spec
+
+As we tidied up after ourselves previously this `spec` run will fail.
+
+    PROJECT_NAME=simple-sg bundle exec rake spec
+
+    security_group 'test-labs-sg'
+      should exist (FAILED - 1)
+
+    Finished in 0.03664 seconds (files took 1.67 seconds to load)
+    1 example, 1 failure
+
+We'll now recreate the security group and then verify that it exists
+with the name we gave it.
+
+    $ PROJECT_NAME=simple-sg bundle exec rake apply
+    Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+
+    $ PROJECT_NAME=simple-sg bundle exec rake spec
+
+    security_group 'test-labs-sg'
+      should exist
+
+    Finished in 0.00153 seconds (files took 1.36 seconds to load)
+    1 example, 0 failures
+
+Don't forget to destroy the security group when you're done testing.
+
+Something to consider is that you don't want to duplicate all your
+terraform work and retest your resource declarations. Instead you
+should test more dynamic aspects of your configuration. Verifying a
+templated policy contains the expected strings or that all policies have
+been attached to a group are much better things to test than just the
+existence of a resource.
+
+I think [awspec](https://github.com/k1LoW/awspec) is a wonderful
+little tool and I can see it being useful both when migrating from
+Ansible to Terraform and to later verify my newer projects.
+
 ### Future Plans
 
 In general most of the things under `projects` will start out as `tf`
