@@ -169,5 +169,5 @@ def project_name
 end
 
 def common_args
-  " -var-file=variables/#{deploy_env}.tfvars "
+  " -var-file=variables/common.tfvars -var-file=variables/#{deploy_env}.tfvars "
 end
